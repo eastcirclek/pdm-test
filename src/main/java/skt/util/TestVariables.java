@@ -18,4 +18,10 @@ public class TestVariables {
     public static final int anomalyPredictionDataInterval = 200;
 
     public static final int outlierRange = 98;
+
+    public static final String rootPath = System.getProperty("user.dir") + "/data/";
+    public static final String inputPath = rootPath + "inputData.txt";
+    public static final String outlierPath = rootPath + "outlierData.txt";
+    public static final String predictionPath = rootPath + "predictionData.txt";
+    public static final String scorePath = rootPath + "scoreData.txt";
 }
