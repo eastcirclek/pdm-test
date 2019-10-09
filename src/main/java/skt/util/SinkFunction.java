@@ -11,7 +11,7 @@ public class SinkFunction {
     public static SinkFunction getSinkFunction(){
         if (sinkFunction == null) {
             sinkFunction = new SinkFunction();
-            File dataDirectory = new File(TestVariables.rootPath);
+            File dataDirectory = new File(TestVariables.dataPath);
 
             if (dataDirectory.exists()) { // Remove directory containing data produced in previous execution
                 try {

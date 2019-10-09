@@ -87,7 +87,6 @@ public class ModelEvaluator {
         @Override
         public Tuple3<SensorData, SensorData, Double> join(SensorData measurementData, SensorData predictionData) throws Exception {
             double distance = calculateDistance(measurementData,predictionData);
-
             return new Tuple3<>(measurementData,predictionData,distance);
         }
 
@@ -181,26 +180,14 @@ public class ModelEvaluator {
         @Override
         public void apply(GlobalWindow globalWindow, Iterable<SensorData> dataInWindow, Collector<SensorData> collector) throws Exception {
             if (StreamSupport.stream(dataInWindow.spliterator(), false).count() == TestVariables.windowSize) {
-                SensorData predictedSensorData = rnnModel(dataInWindow);
+                SensorData latestData = dataInWindow.iterator().next();
+                int dataId = latestData.getDataId();
+                long timeStamp = latestData.getTimestamp() + TestVariables.timeLag;
 
+                DnnModel dnnModel = DnnModel.getDnnModel();
+                SensorData predictedSensorData = dnnModel.predictSensorData(dataInWindow, dataId, timeStamp);
                 collector.collect(predictedSensorData);
             }
-        }
-        private SensorData rnnModel (Iterable<SensorData> dataInWindow) {
-            SensorData latestData = dataInWindow.iterator().next();
-            RandomGenerator randomGenerator = RandomGenerator.getRandomGenerator();
-            int dataId = latestData.getDataId();
-            SensorData predictedSensorData;
-
-            if ((dataId % TestVariables.anomalyPredictionDataInterval) == 0 ) { // Generate feature vector for alarming test
-                predictedSensorData = randomGenerator.generateRandomSensorData(latestData.getDataId(),
-                        latestData.getTimestamp() + TestVariables.timeLag, false);
-            }
-            else {
-                predictedSensorData = randomGenerator.generateRandomSensorData(latestData.getDataId(),
-                        latestData.getTimestamp() + TestVariables.timeLag, true);
-            }
-            return predictedSensorData;
         }
     }
 
