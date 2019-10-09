@@ -17,7 +17,10 @@ public class TestVariables {
     public static final int anomalyValue = 1000;
     public static final int anomalyPredictionDataInterval = 200;
 
-    public static final int outlierRange = 98;
+    public static final int outlierRange = 42;
+
+    public static final int numberOfFeature = 5;
+    public static final int numberOfPartition = 4;
 
     public static final String rootPath = System.getProperty("user.dir");
     public static final String modelPath = rootPath + "/model/";
@@ -26,4 +29,5 @@ public class TestVariables {
     public static final String outlierPath = dataPath + "outlierData.txt";
     public static final String predictionPath = dataPath + "predictionData.txt";
     public static final String scorePath = dataPath + "scoreData.txt";
+
 }

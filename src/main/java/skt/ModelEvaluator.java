@@ -1,8 +1,8 @@
 package skt;
 
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.io.TextOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -19,6 +19,7 @@ import org.apache.flink.streaming.api.windowing.evictors.CountEvictor;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.triggers.CountTrigger;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
 import org.apache.flink.util.OutputTag;
@@ -26,6 +27,7 @@ import skt.util.*;
 import skt.util.SinkFunction;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.stream.StreamSupport;
 
 public class ModelEvaluator {
@@ -63,17 +65,23 @@ public class ModelEvaluator {
 
 
         DataStream<SensorData> predictionStream = filteredStream
+                .flatMap(new ReplicaFunction())
+                .setParallelism(TestVariables.numberOfPartition)
+                .keyBy(new PartitionKeySelectionFunction())
                 .windowAll(GlobalWindows.create())
                 .trigger(CountTrigger.of(TestVariables.triggerSize))
                 .evictor(CountEvictor.of(TestVariables.windowSize))
                 .apply(new SensorWindowFunction())
-                .assignTimestampsAndWatermarks(new PredictionTimestampAndWaterMarkAssigner());
+                .assignTimestampsAndWatermarks(new PredictionTimestampAndWaterMarkAssigner())
+                .setParallelism(1)
+                .windowAll(TumblingEventTimeWindows.of(Time.milliseconds(TestVariables.dataInterval)))
+                .apply(new AverageWindowFunction());
         predictionStream.addSink(new PredictionSink()); // Prediction Sink
 
         DataStream<Tuple3<SensorData, SensorData, Double>> scoreStream = measurementStream
                 .join(predictionStream)
-                .where(new KeySelectFunction())
-                .equalTo(new KeySelectFunction())
+                .where(new TimestampKeySelectFunction())
+                .equalTo(new TimestampKeySelectFunction())
                 .window(TumblingEventTimeWindows.of(Time.milliseconds(TestVariables.dataInterval)))
                 .apply(new StreamJoinFunction());
         scoreStream.addSink(new ScoreSink());           // Score Sink
@@ -81,6 +89,77 @@ public class ModelEvaluator {
         scoreStream.process(new ScoreProcessingFunction());
 
         streamEnv.execute();
+    }
+
+    static class AverageWindowFunction implements AllWindowFunction<SensorData,SensorData,TimeWindow> {
+
+        @Override
+        public void apply(TimeWindow window, Iterable<SensorData> dataInWindow, Collector<SensorData> out) throws Exception {
+            SensorData averageSensorData = getAverageSensorData(dataInWindow);
+            if (averageSensorData != null) {
+                out.collect(averageSensorData);
+            }
+        }
+
+        private SensorData getAverageSensorData(Iterable<SensorData> dataInWindow) {
+            long windowLength = StreamSupport.stream(dataInWindow.spliterator(), false).count();
+
+            Double[][] predictedValues = new Double[TestVariables.numberOfFeature][TestVariables.numberOfPartition];
+            int dataId = -1;
+            long timeStamp = -1;
+            int curPoint = 0;
+
+            if (windowLength == TestVariables.numberOfPartition) {
+                Iterator<SensorData> iter = dataInWindow.iterator();
+                while (iter.hasNext()) {
+                    SensorData sensorData = iter.next();
+                    dataId = sensorData.getDataId();
+                    timeStamp = sensorData.getTimestamp();
+                    predictedValues[0][curPoint] = sensorData.getTemperature();
+                    predictedValues[1][curPoint] = sensorData.getHumidity();
+                    predictedValues[2][curPoint] = sensorData.getMoisture();
+                    predictedValues[3][curPoint] = sensorData.getVibration();
+                    predictedValues[4][curPoint] = sensorData.getPressure();
+
+                    curPoint++;
+                }
+            }
+
+            Double[] averageValues = new Double[TestVariables.numberOfFeature];
+            double sum = 0;
+            for (int i = 0; i < TestVariables.numberOfFeature; i++) {
+                for (int j = 0; j < TestVariables.numberOfPartition; j++) {
+                    sum += predictedValues[i][j];
+                }
+                averageValues[i] = sum / TestVariables.numberOfPartition;
+                sum = 0;
+            }
+
+            return new SensorData(dataId, averageValues[0], averageValues[1], averageValues[2], averageValues[3],
+                    averageValues[4], timeStamp);
+        }
+    }
+
+    static class ReplicaFunction implements FlatMapFunction <SensorData, SensorData> {
+
+        @Override
+        public void flatMap(SensorData originSensorData, Collector<SensorData> out) throws Exception {
+            originSensorData.setPartition(0);
+            out.collect(originSensorData);
+
+            for (int i =1 ; i < TestVariables.numberOfPartition; i++) {
+                SensorData cloneSensorData = (SensorData) originSensorData.clone();
+                cloneSensorData.setPartition(i);
+                out.collect(cloneSensorData);
+            }
+        }
+    }
+
+    static class PartitionKeySelectionFunction implements KeySelector<SensorData, Integer> {
+        @Override
+        public Integer getKey(SensorData sensorData) throws Exception {
+            return sensorData.getPartition();
+        }
     }
 
     static class StreamJoinFunction implements JoinFunction<SensorData, SensorData, Tuple3<SensorData, SensorData, Double>> {
@@ -159,7 +238,7 @@ public class ModelEvaluator {
         }
     }
 
-    static class KeySelectFunction implements KeySelector<SensorData, Long> {
+    static class TimestampKeySelectFunction implements KeySelector<SensorData, Long> {
         @Override
         public Long getKey(SensorData sensorData) throws Exception {
             return sensorData.getTimestamp();

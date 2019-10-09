@@ -48,7 +48,7 @@ public class SinkFunction {
     }
 
     public String dataToOutputString(SensorData sensorData) {
-        String output = String.format("%d, %d, [%.2f,%.2f,%.2f,%.2f,]",
+        String output = String.format("%d, %d, [%.2f, %.2f, %.2f, %.2f, %.2f]",
                 sensorData.getDataId(), sensorData.getTimestamp(),
                 sensorData.getTemperature(),sensorData.getHumidity(),
                 sensorData.getMoisture(),sensorData.getVibration(),
@@ -58,7 +58,7 @@ public class SinkFunction {
     }
 
     public String dataToOutputString(SensorData measurementData, SensorData predictionData, double distance) {
-        String output = String.format("[%d : %d] [%d : %d] [%.2f,%.2f,%.2f,%.2f,%.2f : %.2f,%.2f,%.2f,%.2f,%.2f] " +
+        String output = String.format("[%d : %d] [%d : %d] [%.2f, %.2f, %.2f, %.2f, %.2f : %.2f, %.2f, %.2f, %.2f, %.2f] " +
                         "=> %f",
                 measurementData.getDataId(), predictionData.getDataId(),
                 measurementData.getTimestamp(), predictionData.getTimestamp(),

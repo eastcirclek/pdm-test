@@ -27,10 +27,10 @@ public class DnnModel {
     }
 
     public SensorData predictSensorData(Iterable<SensorData> dataInWindow, int dataId, long timestamp) {
-        float[][] input = new float[5][100];
+        float[][] input = new float[TestVariables.numberOfFeature][TestVariables.windowSize];
         Iterator<SensorData> iter = dataInWindow.iterator();
 
-        for (int i =0; i < 100;i++) {
+        for (int i =0; i < TestVariables.windowSize;i++) {
             SensorData curData = iter.next();
             input[0][i] = (float) curData.getTemperature();
             input[1][i] = (float) curData.getHumidity();
@@ -41,7 +41,7 @@ public class DnnModel {
 
         Tensor featureVectors = Tensor.create(input);
         float[][] predictedVector = sess.runner().feed("input", featureVectors)
-                .fetch("output").run().get(0).copyTo(new float[5][1]);
+                .fetch("output").run().get(0).copyTo(new float[TestVariables.numberOfFeature][1]);
 
         double predictedTemperature = predictedVector[0][0];
         double predictedHumidity = predictedVector[1][0];
