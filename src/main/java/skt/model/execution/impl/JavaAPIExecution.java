@@ -7,8 +7,6 @@ import skt.model.ModelExecutionService;
 import skt.util.SensorData;
 import skt.util.TestVariables;
 
-import java.util.Iterator;
-
 public class JavaAPIExecution implements ModelExecutionService{
     private static Session sess = null;
 
@@ -23,17 +21,7 @@ public class JavaAPIExecution implements ModelExecutionService{
     }
 
     public SensorData executeModel(Iterable<SensorData> dataInWindow, int dataId, long timestamp) {
-        float[][] input = new float[TestVariables.numberOfFeature][TestVariables.windowSize];
-        Iterator<SensorData> iter = dataInWindow.iterator();
-
-        for (int i =0; i < TestVariables.windowSize;i++) {
-            SensorData curData = iter.next();
-            input[0][i] = (float) curData.getTemperature();
-            input[1][i] = (float) curData.getHumidity();
-            input[2][i] = (float) curData.getMoisture();
-            input[3][i] = (float) curData.getVibration();
-            input[4][i] = (float) curData.getPressure();
-        }
+        float[][] input = makeTwoDimensionArray(dataInWindow);
 
         Tensor featureVectors = Tensor.create(input);
         float[][] predictedVector = sess.runner().feed("input", featureVectors)

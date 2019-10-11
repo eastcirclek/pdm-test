@@ -5,8 +5,6 @@ import skt.model.ModelExecutionService;
 import skt.util.SensorData;
 import skt.util.TestVariables;
 
-import java.util.Iterator;
-
 public class JepExecution implements ModelExecutionService {
     private static Interpreter interpeter = null;
 
@@ -30,31 +28,7 @@ public class JepExecution implements ModelExecutionService {
     }
 
     public SensorData executeModel(Iterable<SensorData> dataInWindow, int dataId, long timestamp) {
-        float[][] input = new float[TestVariables.numberOfFeature][TestVariables.windowSize];
-        Iterator<SensorData> iter = dataInWindow.iterator();
-
-        float[] temperature = new float[TestVariables.windowSize];
-        float[] humidity = new float[TestVariables.windowSize];
-        float[] moisture = new float[TestVariables.windowSize];
-        float[] vibration = new float[TestVariables.windowSize];
-        float[] pressure = new float[TestVariables.windowSize];
-
-        for (int i = 0; i < TestVariables.windowSize; i++) {
-            SensorData curData = iter.next();
-            temperature[i] = (float) curData.getTemperature();
-            humidity[i] = (float) curData.getHumidity();
-            moisture[i] = (float) curData.getMoisture();
-            vibration[i] = (float) curData.getVibration();
-            pressure[i] = (float) curData.getPressure();
-
-        }
-
-        float[] values = new float[TestVariables.numberOfFeature*TestVariables.windowSize];
-        System.arraycopy(temperature,0,values,0,temperature.length);
-        System.arraycopy(humidity,0,values,temperature.length,humidity.length);
-        System.arraycopy(moisture,0,values,humidity.length*2,moisture.length);
-        System.arraycopy(vibration,0,values,moisture.length*3,vibration.length);
-        System.arraycopy(pressure,0,values,vibration.length*4,pressure.length);
+        float[] values = makeOneDimensionArray(dataInWindow);
 
         try {
             String in = "input:0";
@@ -72,8 +46,8 @@ public class JepExecution implements ModelExecutionService {
             double predictedVibration = predictedValues.getData()[3];
             double predictedPressure = predictedValues.getData()[4];
 
-            SensorData predictedSensorData = new SensorData(dataId, predictedTemperature, predictedHumidity, predictedMoisture,
-                   predictedVibration, predictedPressure, timestamp);
+            SensorData predictedSensorData = new SensorData(dataId, predictedTemperature, predictedHumidity,
+                    predictedMoisture, predictedVibration, predictedPressure, timestamp);
 
             return predictedSensorData;
         } catch (Exception e) {
