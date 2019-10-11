@@ -6,12 +6,15 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.sink.*;
 import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
+import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.assigners.GlobalWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
@@ -65,19 +68,25 @@ public class ModelEvaluator {
                 .assignTimestampsAndWatermarks(new MeasurementTimestampAndWaterMarkAssigner());
 
 
-        DataStream<SensorData> predictionStream = filteredStream
+        KeyedStream<SensorData,Integer> filteredKeyedStream = filteredStream
                 .flatMap(new ReplicaFunction())
-                .setParallelism(TestVariables.numberOfPartition)
-                .keyBy(new PartitionKeySelectionFunction())
-                .windowAll(GlobalWindows.create())
+                .keyBy(new PartitionKeySelectionFunction());
+
+        WindowedStream<SensorData,Integer,GlobalWindow> filteredWindowedStream= filteredKeyedStream
+                .window(GlobalWindows.create())
                 .trigger(CountTrigger.of(TestVariables.triggerSize))
-                .evictor(CountEvictor.of(TestVariables.windowSize))
+                .evictor(CountEvictor.of(TestVariables.windowSize));
+
+        DataStream predictionStream = filteredWindowedStream
+                .allowedLateness(Time.milliseconds(TestVariables.timeLag))
                 .apply(new SensorWindowFunction())
+                .setParallelism(TestVariables.numberOfPartition)
                 .assignTimestampsAndWatermarks(new PredictionTimestampAndWaterMarkAssigner())
                 .setParallelism(1)
                 .windowAll(TumblingEventTimeWindows.of(Time.milliseconds(TestVariables.dataInterval)))
                 .apply(new AverageWindowFunction());
-        predictionStream.addSink(new PredictionSink());
+
+        predictionStream.addSink(new PredictionSink()); // Prediction Sink
 
         DataStream<Tuple3<SensorData, SensorData, Double>> scoreStream = measurementStream
                 .join(predictionStream)
@@ -256,9 +265,9 @@ public class ModelEvaluator {
         }
     }
 
-    static class SensorWindowFunction implements AllWindowFunction<SensorData, SensorData, GlobalWindow> {
+    static class SensorWindowFunction implements WindowFunction<SensorData,SensorData, Integer, GlobalWindow> {
         @Override
-        public void apply(GlobalWindow globalWindow, Iterable<SensorData> dataInWindow, Collector<SensorData> collector) throws Exception {
+        public void apply(Integer key, GlobalWindow globalWindow, Iterable<SensorData> dataInWindow, Collector<SensorData> collector) throws Exception {
             if (StreamSupport.stream(dataInWindow.spliterator(), false).count() == TestVariables.windowSize) {
                 SensorData latestData = dataInWindow.iterator().next();
                 int dataId = latestData.getDataId();
