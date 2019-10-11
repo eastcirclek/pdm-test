@@ -49,11 +49,21 @@ under the License.
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
+        <repository>
+            <id>central</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
 	</repositories>
 
 	<dependencies>
+        <!-- https://mvnrepository.com/artifact/black.ninia/jep -->
+        <dependency>
+            <groupId>black.ninia</groupId>
+            <artifactId>jep</artifactId>
+            <version>3.9.0</version>
+        </dependency>
 		<!-- Apache Tensorflow dependency -->
-		<dependency>
+        <dependency>
 			<groupId>org.tensorflow</groupId>
 			<artifactId>tensorflow</artifactId>
 			<version>1.13.1</version>

@@ -1,20 +1,18 @@
-package skt.util;
-
+package skt.model.execution.impl;
 
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Session;
 import org.tensorflow.Tensor;
-import sun.management.Sensor;
+import skt.model.ModelExecutionService;
+import skt.util.SensorData;
+import skt.util.TestVariables;
 
 import java.util.Iterator;
 
-public class DnnModel {
-    private static DnnModel dnnModel = null;
+public class JavaAPIExecution implements ModelExecutionService{
     private static Session sess = null;
 
-    public static DnnModel getDnnModel() {
-        if (dnnModel == null) {
-            dnnModel = new DnnModel();
+    public JavaAPIExecution() {
             try {
                 SavedModelBundle b = SavedModelBundle.load(TestVariables.modelPath, "serve"); //restore model
                 sess = b.session(); //get session
@@ -22,11 +20,9 @@ public class DnnModel {
                 System.out.println(e);
                 System.exit(1); //exit system if model is not available
             }
-        }
-        return dnnModel;
     }
 
-    public SensorData predictSensorData(Iterable<SensorData> dataInWindow, int dataId, long timestamp) {
+    public SensorData executeModel(Iterable<SensorData> dataInWindow, int dataId, long timestamp) {
         float[][] input = new float[TestVariables.numberOfFeature][TestVariables.windowSize];
         Iterator<SensorData> iter = dataInWindow.iterator();
 

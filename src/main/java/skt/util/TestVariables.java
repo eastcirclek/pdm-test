@@ -22,6 +22,12 @@ public class TestVariables {
     public static final int numberOfFeature = 5;
     public static final int numberOfPartition = 4;
 
+    public static final String jepLibraryPath = "/home/sdn/anaconda2/lib/python2.7/site-packages/jep/jep.so";
+    public enum ExecutionMode {
+        JAVAAPI, JEP, SERVINGAPI
+    }
+    public static final ExecutionMode currentExecutionMode = ExecutionMode.JEP; // Set execution mode
+
     public static final String rootPath = System.getProperty("user.dir");
     public static final String modelPath = rootPath + "/model/";
     public static final String dataPath = rootPath + "/data/";

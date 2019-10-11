@@ -23,6 +23,7 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
 import org.apache.flink.util.OutputTag;
+import skt.model.ModelExecutionFactory;
 import skt.util.*;
 import skt.util.SinkFunction;
 
@@ -76,7 +77,7 @@ public class ModelEvaluator {
                 .setParallelism(1)
                 .windowAll(TumblingEventTimeWindows.of(Time.milliseconds(TestVariables.dataInterval)))
                 .apply(new AverageWindowFunction());
-        predictionStream.addSink(new PredictionSink()); // Prediction Sink
+        predictionStream.addSink(new PredictionSink());
 
         DataStream<Tuple3<SensorData, SensorData, Double>> scoreStream = measurementStream
                 .join(predictionStream)
@@ -262,9 +263,9 @@ public class ModelEvaluator {
                 SensorData latestData = dataInWindow.iterator().next();
                 int dataId = latestData.getDataId();
                 long timeStamp = latestData.getTimestamp() + TestVariables.timeLag;
-
-                DnnModel dnnModel = DnnModel.getDnnModel();
-                SensorData predictedSensorData = dnnModel.predictSensorData(dataInWindow, dataId, timeStamp);
+                SensorData predictedSensorData = ModelExecutionFactory.
+                        getModel(TestVariables.currentExecutionMode).
+                        executeModel(dataInWindow, dataId, timeStamp);
                 collector.collect(predictedSensorData);
             }
         }
