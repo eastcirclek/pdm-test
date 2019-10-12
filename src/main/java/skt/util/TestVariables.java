@@ -1,13 +1,9 @@
 package skt.util;
 
-import jep.MainInterpreter;
-
 public class TestVariables {
     public static final int windowSize = 100;
     public static final int triggerSize = 1;
-
     public static final long timeLag = 3000; //milliseconds
-
     public static final long dataInterval = 100; // milliseconds
 
     public static final long distanceTreshold = 41;
@@ -15,9 +11,6 @@ public class TestVariables {
     public static final int randomStart = 1;
     public static final int randomEnd = 45;
     public static final int randomRange = randomEnd -randomStart + 1;
-
-    public static final int anomalyValue = 1000;
-    public static final int anomalyPredictionDataInterval = 200;
 
     public static final int outlierRange = 42;
 
@@ -27,7 +20,7 @@ public class TestVariables {
     public enum ExecutionMode {
         JAVAAPI, JEP, SERVINGAPI
     }
-    public static final ExecutionMode currentExecutionMode = ExecutionMode.JEP; // Set execution mode
+    public static final ExecutionMode currentExecutionMode = ExecutionMode.JAVAAPI; // Set execution mode
 
     //For serving API execution mode
     public static final String servingMachineIP = "0.0.0.0";

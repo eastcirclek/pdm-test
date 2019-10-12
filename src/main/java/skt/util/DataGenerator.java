@@ -19,7 +19,7 @@ public class DataGenerator extends RichSourceFunction<SensorData> {
             dataId ++;
             SensorData data;
             curTimeStamp += TestVariables.dataInterval;
-            data = randomGenerator.generateRandomSensorData(dataId,curTimeStamp,true);
+            data = randomGenerator.generateRandomSensorData(dataId,curTimeStamp);
 
             ctx.collectWithTimestamp(data,data.getTimestamp());
 
