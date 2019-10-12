@@ -12,7 +12,7 @@ public class JavaAPIExecution implements ModelExecutionService{
 
     public JavaAPIExecution() {
             try {
-                SavedModelBundle b = SavedModelBundle.load(TestVariables.modelPath, "serve"); //restore model
+                SavedModelBundle b = SavedModelBundle.load(TestVariables.modelPath, TestVariables.modelTag); //restore model
                 sess = b.session(); //get session
             } catch (Exception e) {
                 System.out.println(e);
@@ -24,8 +24,8 @@ public class JavaAPIExecution implements ModelExecutionService{
         float[][] input = makeTwoDimensionArray(dataInWindow);
 
         Tensor featureVectors = Tensor.create(input);
-        float[][] predictedVector = sess.runner().feed("input", featureVectors)
-                .fetch("output").run().get(0).copyTo(new float[TestVariables.numberOfFeature][1]);
+        float[][] predictedVector = sess.runner().feed(TestVariables.modelInputName, featureVectors)
+                .fetch(TestVariables.modelOutputName).run().get(0).copyTo(new float[TestVariables.numberOfFeature][1]);
 
         double predictedTemperature = predictedVector[0][0];
         double predictedHumidity = predictedVector[1][0];

@@ -17,11 +17,10 @@ public class JepExecution implements ModelExecutionService {
                 interpeter.exec("import numpy");
                 interpeter.exec("sess = tf.Session()");
                 interpeter.set("model_path", TestVariables.modelPath);
-                String serving = "serve";
-                interpeter.set("serve",serving);
+                interpeter.set("serve",TestVariables.modelTag);
                 interpeter.exec("tf.saved_model.loader.load(sess,[serve],model_path)");
             } catch (Exception e) {
-                System.out.println("e");
+                System.out.println(e);
                 System.exit(1);
             }
         }
@@ -31,10 +30,8 @@ public class JepExecution implements ModelExecutionService {
         float[] values = makeOneDimensionArray(dataInWindow);
 
         try {
-            String in = "input:0";
-            String out = "output:0";
-            interpeter.set("input", in);
-            interpeter.set("output", out);
+            interpeter.set("input", TestVariables.modelInputName + ":0");
+            interpeter.set("output", TestVariables.modelOutputName + ":0");
             NDArray<float[]> valuesForJep = new NDArray<>(values,5,100);
             interpeter.set("x", valuesForJep);
             interpeter.exec("prediction = sess.run(output, feed_dict={input: x})");

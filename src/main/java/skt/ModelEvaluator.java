@@ -64,7 +64,7 @@ public class ModelEvaluator {
                 .windowAll(GlobalWindows.create())
                 .trigger(CountTrigger.of(TestVariables.triggerSize))
                 .evictor(CountEvictor.of(TestVariables.windowSize))
-                .apply(new MeasurementWindowFunction())
+                .apply(new MeasurementWindowAllFunction())
                 .assignTimestampsAndWatermarks(new MeasurementTimestampAndWaterMarkAssigner());
 
 
@@ -79,7 +79,7 @@ public class ModelEvaluator {
 
         DataStream predictionStream = filteredWindowedStream
                 .allowedLateness(Time.milliseconds(TestVariables.timeLag))
-                .apply(new SensorWindowFunction())
+                .apply(new PredictionWindowFunction())
                 .setParallelism(TestVariables.numberOfPartition)
                 .assignTimestampsAndWatermarks(new PredictionTimestampAndWaterMarkAssigner())
                 .setParallelism(1)
@@ -255,7 +255,7 @@ public class ModelEvaluator {
         }
     }
 
-    static class MeasurementWindowFunction implements AllWindowFunction<SensorData, SensorData, GlobalWindow> {
+    static class MeasurementWindowAllFunction implements AllWindowFunction<SensorData, SensorData, GlobalWindow> {
         @Override
         public void apply(GlobalWindow globalWindow, Iterable<SensorData> dataInWindow, Collector<SensorData> collector) throws Exception {
             if (StreamSupport.stream(dataInWindow.spliterator(), false).count() == TestVariables.windowSize) {
@@ -265,7 +265,7 @@ public class ModelEvaluator {
         }
     }
 
-    static class SensorWindowFunction implements WindowFunction<SensorData,SensorData, Integer, GlobalWindow> {
+    static class PredictionWindowFunction implements WindowFunction<SensorData,SensorData, Integer, GlobalWindow> {
         @Override
         public void apply(Integer key, GlobalWindow globalWindow, Iterable<SensorData> dataInWindow, Collector<SensorData> collector) throws Exception {
             if (StreamSupport.stream(dataInWindow.spliterator(), false).count() == TestVariables.windowSize) {

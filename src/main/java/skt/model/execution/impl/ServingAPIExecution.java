@@ -33,7 +33,7 @@ public class ServingAPIExecution implements ModelExecutionService {
         tensorflow.serving.Model.ModelSpec.Builder modelSpecBuilder = tensorflow.serving.Model.ModelSpec.newBuilder();
         modelSpecBuilder.setName(TestVariables.servingModelName);
         modelSpecBuilder.setVersion(Int64Value.of(TestVariables.servingModelVersion));
-        modelSpecBuilder.setSignatureName("serving_default");
+        modelSpecBuilder.setSignatureName(TestVariables.servingModelSignature);
         requestBuilder.setModelSpec(modelSpecBuilder);
     }
     public SensorData executeModel(Iterable<SensorData> dataInWindow, int dataId, long timestamp) {
@@ -52,7 +52,7 @@ public class ServingAPIExecution implements ModelExecutionService {
         featuresTensorBuilder.setTensorShape(shape);
         TensorProto featuresTensorProto = featuresTensorBuilder.build();
 
-        requestBuilder.putInputs("input", featuresTensorProto);
+        requestBuilder.putInputs(TestVariables.modelInputName, featuresTensorProto);
 
         PredictRequest request = requestBuilder.build();
         PredictResponse response = stub.predict(request);

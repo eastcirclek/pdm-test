@@ -25,13 +25,19 @@ public class TestVariables {
     public enum ExecutionMode {
         JAVAAPI, JEP, SERVINGAPI
     }
-    public static final ExecutionMode currentExecutionMode = ExecutionMode.JAVAAPI; // Set execution mode
+    public static final ExecutionMode currentExecutionMode = ExecutionMode.SERVINGAPI; // Set execution mode
 
     //For serving API execution mode
     public static final String servingMachineIP = "0.0.0.0";
     public static final int servingMachinePort = 9000;
     public static final String servingModelName = "DNN";
     public static final int servingModelVersion = 1;
+    public static final String servingModelSignature = "serving_default";
+
+    //For general execution mode
+    public static final String modelInputName = "input";
+    public static final String modelOutputName = "output";
+    public static final String modelTag = "serve";
 
     public static final String rootPath = System.getProperty("user.dir");
     public static final String modelPath = rootPath + "/model/";
