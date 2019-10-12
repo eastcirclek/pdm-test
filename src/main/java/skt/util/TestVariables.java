@@ -1,5 +1,7 @@
 package skt.util;
 
+import jep.MainInterpreter;
+
 public class TestVariables {
     public static final int windowSize = 100;
     public static final int triggerSize = 1;
@@ -20,12 +22,12 @@ public class TestVariables {
     public static final int outlierRange = 42;
 
     public static final int numberOfFeature = 5;
-    public static final int numberOfPartition = 7;
+    public static final int numberOfPartition = 1;
 
     public enum ExecutionMode {
         JAVAAPI, JEP, SERVINGAPI
     }
-    public static final ExecutionMode currentExecutionMode = ExecutionMode.SERVINGAPI; // Set execution mode
+    public static final ExecutionMode currentExecutionMode = ExecutionMode.JEP; // Set execution mode
 
     //For serving API execution mode
     public static final String servingMachineIP = "0.0.0.0";
@@ -46,6 +48,5 @@ public class TestVariables {
     public static final String outlierPath = dataPath + "outlierData.txt";
     public static final String predictionPath = dataPath + "predictionData.txt";
     public static final String scorePath = dataPath + "scoreData.txt";
-
     public static final String jepLibraryPath = rootPath + "/lib/jep/jep.so";
 }

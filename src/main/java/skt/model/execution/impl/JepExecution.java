@@ -9,21 +9,19 @@ public class JepExecution implements ModelExecutionService {
     private static Interpreter interpeter = null;
 
     public JepExecution() {
-        if (interpeter == null) {
-            try {
-                MainInterpreter.setJepLibraryPath(TestVariables.jepLibraryPath);
-                interpeter = new SharedInterpreter();
-                interpeter.exec("import tensorflow as tf");
-                interpeter.exec("import numpy");
-                interpeter.exec("sess = tf.Session()");
-                interpeter.set("model_path", TestVariables.modelPath);
-                interpeter.set("serve",TestVariables.modelTag);
-                interpeter.exec("tf.saved_model.loader.load(sess,[serve],model_path)");
-            } catch (Exception e) {
-                System.out.println(e);
-                System.exit(1);
-            }
+        try {
+            interpeter = SharedJepInterpreter.getSharedJepInterpreter();
+            interpeter.exec("import tensorflow as tf");
+            interpeter.exec("import numpy");
+            interpeter.exec("sess = tf.Session()");
+            interpeter.set("model_path", TestVariables.modelPath);
+            interpeter.set("serve",TestVariables.modelTag);
+            interpeter.exec("tf.saved_model.loader.load(sess,[serve],model_path)");
+        } catch (Exception e) {
+            System.out.println(e);
+            System.exit(1);
         }
+
     }
 
     public SensorData executeModel(Iterable<SensorData> dataInWindow, int dataId, long timestamp) {
