@@ -61,12 +61,7 @@ public class ModelEvaluator {
         outlierStream.addSink(new OutlierSink());       // Outlier Sink
 
         DataStream<SensorData> measurementStream = filteredStream
-                .windowAll(GlobalWindows.create())
-                .trigger(CountTrigger.of(TestVariables.triggerSize))
-                .evictor(CountEvictor.of(TestVariables.windowSize))
-                .apply(new MeasurementWindowAllFunction())
                 .assignTimestampsAndWatermarks(new MeasurementTimestampAndWaterMarkAssigner());
-
 
         KeyedStream<SensorData,Integer> filteredKeyedStream = filteredStream
                 .flatMap(new ReplicaFunction())
@@ -252,16 +247,6 @@ public class ModelEvaluator {
         @Override
         public Long getKey(SensorData sensorData) throws Exception {
             return sensorData.getTimestamp();
-        }
-    }
-
-    static class MeasurementWindowAllFunction implements AllWindowFunction<SensorData, SensorData, GlobalWindow> {
-        @Override
-        public void apply(GlobalWindow globalWindow, Iterable<SensorData> dataInWindow, Collector<SensorData> collector) throws Exception {
-            if (StreamSupport.stream(dataInWindow.spliterator(), false).count() == TestVariables.windowSize) {
-                SensorData latestData = dataInWindow.iterator().next();
-                collector.collect(latestData);
-            }
         }
     }
 
