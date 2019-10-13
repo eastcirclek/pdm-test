@@ -12,20 +12,12 @@ public class RandomGenerator {
         return randomGenerator;
     }
 
-    public SensorData generateRandomSensorData(int dataId, long timeStamp,boolean flag) {
+    public SensorData generateRandomSensorData(int dataId, long timeStamp) {
         double temperature = getRandom();
         double humidity = getRandom();
         double moisture = getRandom();
         double vibration = getRandom();
         double pressure = getRandom();
-
-        if (flag == false) {
-            temperature += TestVariables.anomalyValue;
-            humidity += TestVariables.anomalyValue;
-            moisture += TestVariables.anomalyValue;
-            vibration += TestVariables.anomalyValue;
-            pressure += TestVariables.anomalyValue;
-        }
 
         return new SensorData(dataId,temperature,humidity,moisture,vibration,pressure,timeStamp);
     }

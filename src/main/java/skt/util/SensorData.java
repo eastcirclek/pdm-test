@@ -1,6 +1,6 @@
 package skt.util;
 
-public class SensorData {
+public class SensorData implements Cloneable{
     private final int dataId;
     private final double temperature;
     private final double humidity;
@@ -8,6 +8,7 @@ public class SensorData {
     private final double vibration;
     private final double pressure;
     private final long timestamp;
+    private int partition;
 
     public SensorData(
             int dataId,
@@ -26,6 +27,7 @@ public class SensorData {
         this.pressure = pressure;
         this.timestamp = timestamp;
         this.dataId = dataId;
+        this.partition = -1;
     }
     public double getTemperature() {
         return temperature;
@@ -47,5 +49,14 @@ public class SensorData {
         return timestamp;
     }
     public int getDataId() { return dataId; }
+    public void setPartition(int partitionNumber) { this.partition = partitionNumber;}
+    public int getPartition() {return partition;}
+    public Object clone() {
+        Object clone = null;
+        try {
+            clone = super.clone();
+        } catch (Exception e) {}
+        return clone;
+    }
 
 }
