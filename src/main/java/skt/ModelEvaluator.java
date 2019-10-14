@@ -1,5 +1,6 @@
 package skt;
 
+import org.apache.commons.collections.IteratorUtils;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -32,6 +33,7 @@ import skt.util.SinkFunction;
 
 import java.io.File;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.StreamSupport;
 
 public class ModelEvaluator {
@@ -254,7 +256,8 @@ public class ModelEvaluator {
         @Override
         public void apply(Integer key, GlobalWindow globalWindow, Iterable<SensorData> dataInWindow, Collector<SensorData> collector) throws Exception {
             if (StreamSupport.stream(dataInWindow.spliterator(), false).count() == TestVariables.windowSize) {
-                SensorData latestData = dataInWindow.iterator().next();
+                List<SensorData> myList = IteratorUtils.toList(dataInWindow.iterator());
+                SensorData latestData = myList.get(TestVariables.windowSize-1);
                 int dataId = latestData.getDataId();
                 long timeStamp = latestData.getTimestamp() + TestVariables.timeLag;
                 SensorData predictedSensorData = ModelExecutionFactory.
