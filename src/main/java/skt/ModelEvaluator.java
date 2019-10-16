@@ -41,6 +41,7 @@ public class ModelEvaluator {
         StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.getExecutionEnvironment();
 
         streamEnv.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+        streamEnv.getConfig().setAutoWatermarkInterval(TestVariables.dataInterval);
 
         DataStream<SensorData> originStream = streamEnv.addSource(new DataGenerator());
 
@@ -63,7 +64,7 @@ public class ModelEvaluator {
         outlierStream.addSink(new OutlierSink());       // Outlier Sink
 
         DataStream<SensorData> measurementStream = filteredStream
-                .assignTimestampsAndWatermarks(new MeasurementTimestampAndWaterMarkAssigner());
+                .assignTimestampsAndWatermarks(new TimestampAndWaterMarkAssigner());
 
         KeyedStream<SensorData,Integer> filteredKeyedStream = filteredStream
                 .flatMap(new ReplicaFunction())
@@ -75,12 +76,13 @@ public class ModelEvaluator {
                 .evictor(CountEvictor.of(TestVariables.windowSize));
 
         DataStream predictionStream = filteredWindowedStream
-                .allowedLateness(Time.milliseconds(TestVariables.timeLag))
                 .apply(new PredictionWindowFunction())
                 .setParallelism(TestVariables.numberOfPartition)
-                .assignTimestampsAndWatermarks(new PredictionTimestampAndWaterMarkAssigner())
+                .assignTimestampsAndWatermarks(new TimestampAndWaterMarkAssigner())
                 .setParallelism(1)
                 .windowAll(TumblingEventTimeWindows.of(Time.milliseconds(TestVariables.dataInterval)))
+                .allowedLateness((Time.milliseconds(TestVariables.allowableLateness)))
+                .trigger(CountTrigger.of(TestVariables.numberOfPartition))
                 .apply(new AverageWindowFunction());
 
         predictionStream.addSink(new PredictionSink()); // Prediction Sink
@@ -109,28 +111,25 @@ public class ModelEvaluator {
         }
 
         private SensorData getAverageSensorData(Iterable<SensorData> dataInWindow) {
-            long windowLength = StreamSupport.stream(dataInWindow.spliterator(), false).count();
-
             Double[][] predictedValues = new Double[TestVariables.numberOfFeature][TestVariables.numberOfPartition];
             int dataId = -1;
             long timeStamp = -1;
             int curPoint = 0;
 
-            if (windowLength == TestVariables.numberOfPartition) {
-                Iterator<SensorData> iter = dataInWindow.iterator();
-                while (iter.hasNext()) {
-                    SensorData sensorData = iter.next();
-                    dataId = sensorData.getDataId();
-                    timeStamp = sensorData.getTimestamp();
-                    predictedValues[0][curPoint] = sensorData.getTemperature();
-                    predictedValues[1][curPoint] = sensorData.getHumidity();
-                    predictedValues[2][curPoint] = sensorData.getMoisture();
-                    predictedValues[3][curPoint] = sensorData.getVibration();
-                    predictedValues[4][curPoint] = sensorData.getPressure();
+            Iterator<SensorData> iter = dataInWindow.iterator();
+            while (iter.hasNext()) {
+                SensorData sensorData = iter.next();
+                dataId = sensorData.getDataId();
+                timeStamp = sensorData.getTimestamp();
+                predictedValues[0][curPoint] = sensorData.getTemperature();
+                predictedValues[1][curPoint] = sensorData.getHumidity();
+                predictedValues[2][curPoint] = sensorData.getMoisture();
+                predictedValues[3][curPoint] = sensorData.getVibration();
+                predictedValues[4][curPoint] = sensorData.getPressure();
 
-                    curPoint++;
-                }
+                curPoint++;
             }
+
 
             Double[] averageValues = new Double[TestVariables.numberOfFeature];
             double sum = 0;
@@ -212,24 +211,7 @@ public class ModelEvaluator {
         }
     }
 
-    static class PredictionTimestampAndWaterMarkAssigner implements AssignerWithPeriodicWatermarks<SensorData> {
-
-        private final long maxTimeLag = TestVariables.timeLag;
-        private long currentMaxTimestamp;
-        @Override
-        public Watermark getCurrentWatermark() {
-            return new Watermark(currentMaxTimestamp-maxTimeLag);
-        }
-
-        @Override
-        public long extractTimestamp(SensorData sensorData, long l) {
-            long timestamp = sensorData.getTimestamp();
-            currentMaxTimestamp = Math.max(timestamp,currentMaxTimestamp);
-            return sensorData.getTimestamp();
-        }
-    }
-
-    static class MeasurementTimestampAndWaterMarkAssigner implements AssignerWithPeriodicWatermarks<SensorData> {
+    static class TimestampAndWaterMarkAssigner implements AssignerWithPeriodicWatermarks<SensorData> {
         private long currentMaxTimestamp;
 
         @Override
@@ -256,8 +238,8 @@ public class ModelEvaluator {
         @Override
         public void apply(Integer key, GlobalWindow globalWindow, Iterable<SensorData> dataInWindow, Collector<SensorData> collector) throws Exception {
             if (StreamSupport.stream(dataInWindow.spliterator(), false).count() == TestVariables.windowSize) {
-                List<SensorData> myList = IteratorUtils.toList(dataInWindow.iterator());
-                SensorData latestData = myList.get(TestVariables.windowSize-1);
+                List<SensorData> dataList = IteratorUtils.toList(dataInWindow.iterator());
+                SensorData latestData = dataList.get(TestVariables.windowSize-1);
                 int dataId = latestData.getDataId();
                 long timeStamp = latestData.getTimestamp() + TestVariables.timeLag;
                 SensorData predictedSensorData = ModelExecutionFactory.
