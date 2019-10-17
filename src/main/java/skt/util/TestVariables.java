@@ -5,6 +5,7 @@ public class TestVariables {
     public static final int triggerSize = 1;
     public static final long timeLag = 3000; //milliseconds
     public static final long dataInterval = 100; // milliseconds
+    public static final long allowableLateness = dataInterval * 2;
 
     public static final long distanceTreshold = 41;
 
